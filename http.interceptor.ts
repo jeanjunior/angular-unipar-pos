@@ -14,15 +14,16 @@ import { Router } from '@angular/router';
 @Injectable()
 export class HttpConfigInterceptor implements HttpInterceptor {
 
-  constructor(private router: Router) {
-
-  }
+  constructor(private router: Router) { }
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
 
-    const token: string | null = localStorage.getItem('token');
-    if (token) {
-      request = request.clone({ headers: request.headers.set('Authorization', 'Bearer ' + token) });
+    // Se não tiver já um auth no headers pega do localStorage e seta
+    if (!request.headers.has('Authorization')) {
+      const token: string | null = localStorage.getItem('token');
+      if (token) {
+        request = request.clone({ headers: request.headers.set('Authorization', 'Bearer ' + token) });
+      }
     }
 
     if (!request.headers.has('Content-Type')) {
@@ -32,11 +33,11 @@ export class HttpConfigInterceptor implements HttpInterceptor {
 
     return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
-        console.log('ERRO ' + error.status, error);
         if (error.status === 401) {
           this.router.navigate(['/login']);
           return throwError('401 Unauthorized');
         }
+        console.log('ERRO ' + error.status, error);
         return throwError(error);
       }));
 
